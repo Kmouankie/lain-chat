@@ -1,0 +1,453 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>New User Registration</title>
+    
+    
+    <link rel="stylesheet" href="{% static 'css/terminal.css' %}">
+    <link rel="stylesheet" href="{% static 'css/lain-effects.css' %}">
+    
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    
+    <style>
+        .auth-container {
+            max-width: 500px;
+            margin: 50px auto;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.9);
+            border: 2px solid #00ff00;
+            border-radius: 8px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        
+        .auth-header {
+            text-align: center;
+            color: #00ff00;
+            margin-bottom: 30px;
+        }
+        
+        .auth-header p {
+            color: #ffff00;
+            font-size: 12px;
+            margin-top: 10px;
+        }
+        
+        .auth-form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .form-group label {
+            color: #00ff00;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+        
+        .form-group input {
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid #333;
+            color: #00ff00;
+            padding: 10px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+            border-radius: 4px;
+        }
+        
+        .form-group input:focus {
+            outline: none;
+            border-color: #00ff00;
+            box-shadow: 0 0 5px rgba(0, 255, 0, 0.3);
+        }
+        
+        .form-group input.error {
+            border-color: #ff0000;
+            box-shadow: 0 0 5px rgba(255, 0, 0, 0.3);
+        }
+        
+        .form-group input.valid {
+            border-color: #00ff00;
+            box-shadow: 0 0 5px rgba(0, 255, 0, 0.5);
+        }
+        
+        .password-strength {
+            font-size: 11px;
+            margin-top: 5px;
+            color: #999;
+        }
+        
+        .password-strength.weak { color: #ff0000; }
+        .password-strength.medium { color: #ffff00; }
+        .password-strength.strong { color: #00ff00; }
+        
+        .checkbox-group {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            color: #00ff00;
+            font-size: 11px;
+            line-height: 1.4;
+        }
+        
+        .checkbox-group input {
+            margin-top: 2px;
+        }
+        
+        .btn {
+            background: #00ff00;
+            color: #000;
+            border: none;
+            padding: 12px 20px;
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+        
+        .btn:hover {
+            background: #00cc00;
+            transform: translateY(-2px);
+        }
+        
+        .btn:disabled {
+            background: #333;
+            color: #666;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .btn-secondary {
+            background: transparent;
+            color: #00ff00;
+            border: 1px solid #00ff00;
+        }
+        
+        .btn-secondary:hover {
+            background: rgba(0, 255, 0, 0.1);
+        }
+        
+        .messages {
+            margin-bottom: 20px;
+        }
+        
+        .messages .alert {
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        
+        .messages .alert-error {
+            background: rgba(255, 0, 0, 0.2);
+            color: #ff0000;
+            border: 1px solid #ff0000;
+        }
+        
+        .messages .alert-success {
+            background: rgba(0, 255, 0, 0.2);
+            color: #00ff00;
+            border: 1px solid #00ff00;
+        }
+        
+        .auth-links {
+            text-align: center;
+            margin-top: 20px;
+        }
+        
+        .auth-links a {
+            color: #00ff00;
+            text-decoration: none;
+            font-size: 12px;
+        }
+        
+        .auth-links a:hover {
+            text-decoration: underline;
+        }
+        
+        .anonymous-section {
+            border-top: 1px solid #333;
+            margin-top: 30px;
+            padding-top: 20px;
+            text-align: center;
+        }
+        
+        .anonymous-section h3 {
+            color: #ffff00;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+        
+        .anonymous-section p {
+            color: #999;
+            font-size: 12px;
+            margin-bottom: 15px;
+        }
+        
+        #anonymous-name {
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid #333;
+            color: #ffff00;
+            padding: 8px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        
+        .glitch-text {
+            animation: glitch 2s infinite;
+        }
+        
+        @keyframes glitch {
+            0%, 100% { transform: translate(0); }
+            20% { transform: translate(-2px, 2px); }
+            40% { transform: translate(-2px, -2px); }
+            60% { transform: translate(2px, 2px); }
+            80% { transform: translate(2px, -2px); }
+        }
+        
+        .protocol-info {
+            background: rgba(0, 0, 0, 0.7);
+            border: 1px solid #333;
+            padding: 15px;
+            margin-bottom: 20px;
+            font-size: 11px;
+            color: #999;
+            border-radius: 4px;
+        }
+        
+        .protocol-info .highlight {
+            color: #ffff00;
+        }
+    </style>
+</head>
+<body>
+    <div class="crt-container">
+        <div class="scan-lines"></div>
+        
+        <div class="auth-container">
+            <div class="auth-header">
+                <h1 class="glitch-text">New User Registration</h1>
+                
+            </div>
+            
+            
+            <div class="protocol-info">
+                <span class="highlight">WIRED_ACCESS_PROTOCOL:</span> Creating new neural pathway...<br>
+                Registration establishes your permanent presence in the Wired.<br>
+                All communications are subject to temporal corruption.
+            </div>
+            
+            
+            {% if messages %}
+                <div class="messages">
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+            
+            
+            <form method="post" class="auth-form" id="registerForm">
+                {% csrf_token %}
+                
+                <div class="form-group">
+                    <label for="username">Username (optional):</label>
+                    <input type="text" id="username" name="username" maxlength="20" 
+                           placeholder="Leave empty for auto-generated Lain name">
+                </div>
+                
+                <div class="form-group">
+                    <label for="email">Email:</label>
+                    <input type="email" id="email" name="email" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">Password:</label>
+                    <input type="password" id="password" name="password" required>
+                    <div class="password-strength" id="passwordStrength"></div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="password_confirm">Confirm Password:</label>
+                    <input type="password" id="password_confirm" name="password_confirm" required>
+                    <div class="password-strength" id="passwordMatch"></div>
+                </div>
+                
+                <div class="checkbox-group">
+                    <input type="checkbox" id="accept_terms" name="accept_terms" required>
+                    <label for="accept_terms">
+                        I understand that all communications in the Wired are subject to temporal corruption 
+                        and may be lost. I accept the risks.
+                    </label>
+                </div>
+                
+                <button type="submit" class="btn" id="submitBtn" disabled>Connect</button>
+            </form>
+            
+            <div class="auth-links">
+                <a href="{% url 'authentication:login' %}">Already have access? Login</a>
+            </div>
+            
+            
+            <div class="anonymous-section">
+                <h3>Quick Anonymous Access</h3>
+                <p>Enter without registration (temporary session)</p>
+                
+                <input type="text" id="anonymous-name" placeholder="Choose a name (optional)" maxlength="20">
+                <button type="button" class="btn btn-secondary" onclick="connectAnonymous()">Enter as Anonymous</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        
+        function connectAnonymous() {
+            const nameInput = document.getElementById('anonymous-name');
+            const name = nameInput.value.trim();
+            
+            fetch('/auth/quick-connect/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: JSON.stringify({
+                    session_name: name
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.href = '/chat/';
+                } else {
+                    alert('Connection failed. Please try again.');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Connection failed. Please try again.');
+            });
+        }
+        
+        
+        const passwordInput = document.getElementById('password');
+        const passwordConfirm = document.getElementById('password_confirm');
+        const submitBtn = document.getElementById('submitBtn');
+        const acceptTerms = document.getElementById('accept_terms');
+        
+        
+        function checkPasswordStrength(password) {
+            const strengthElement = document.getElementById('passwordStrength');
+            let strength = 0;
+            let message = '';
+            
+            if (password.length >= 8) strength++;
+            if (/[A-Z]/.test(password)) strength++;
+            if (/[a-z]/.test(password)) strength++;
+            if (/[0-9]/.test(password)) strength++;
+            if (/[^A-Za-z0-9]/.test(password)) strength++;
+            
+            if (password.length === 0) {
+                message = '';
+                strengthElement.className = 'password-strength';
+            } else if (strength < 3) {
+                message = 'WEAK - Neural pathway unstable';
+                strengthElement.className = 'password-strength weak';
+            } else if (strength < 4) {
+                message = 'MEDIUM - Partial encryption achieved';
+                strengthElement.className = 'password-strength medium';
+            } else {
+                message = 'STRONG - Full neural encryption active';
+                strengthElement.className = 'password-strength strong';
+            }
+            
+            strengthElement.textContent = message;
+            return strength >= 3;
+        }
+        
+        
+        function checkPasswordMatch() {
+            const matchElement = document.getElementById('passwordMatch');
+            const password = passwordInput.value;
+            const confirm = passwordConfirm.value;
+            
+            if (confirm.length === 0) {
+                matchElement.textContent = '';
+                matchElement.className = 'password-strength';
+                passwordConfirm.className = 'form-control';
+                return false;
+            }
+            
+            if (password === confirm) {
+                matchElement.textContent = 'Passwords match - Neural sync established';
+                matchElement.className = 'password-strength strong';
+                passwordConfirm.classList.add('valid');
+                passwordConfirm.classList.remove('error');
+                return true;
+            } else {
+                matchElement.textContent = 'Passwords do not match - Neural desync detected';
+                matchElement.className = 'password-strength weak';
+                passwordConfirm.classList.add('error');
+                passwordConfirm.classList.remove('valid');
+                return false;
+            }
+        }
+        
+        
+        function validateForm() {
+            const email = document.getElementById('email').value;
+            const password = passwordInput.value;
+            const passwordStrong = checkPasswordStrength(password);
+            const passwordsMatch = checkPasswordMatch();
+            const termsAccepted = acceptTerms.checked;
+            
+            const isValid = email && passwordStrong && passwordsMatch && termsAccepted;
+            submitBtn.disabled = !isValid;
+        }
+        
+        
+        passwordInput.addEventListener('input', validateForm);
+        passwordConfirm.addEventListener('input', validateForm);
+        document.getElementById('email').addEventListener('input', validateForm);
+        acceptTerms.addEventListener('change', validateForm);
+        
+        
+        document.getElementById('email').focus();
+        
+        
+        document.getElementById('username').addEventListener('input', function(e) {
+            const value = e.target.value;
+            e.target.value = value.replace(/[^a-zA-Z0-9_]/g, '');
+        });
+        
+    
+        document.getElementById('anonymous-name').addEventListener('input', function(e) {
+            const value = e.target.value;
+            e.target.value = value.replace(/[^a-zA-Z0-9]/g, '');
+        });
+        
+        
+        const lainNames = ['Layer01', 'Phantom', 'Digital', 'Wired', 'Protocol', 'Cipher', 'Neural', 'Ghost', 'Echo', 'Void'];
+        document.getElementById('anonymous-name').placeholder = lainNames[Math.floor(Math.random() * lainNames.length)] + Math.floor(Math.random() * 900 + 100);
+        
+        
+        validateForm();
+    </script>
+</body>
+</html>

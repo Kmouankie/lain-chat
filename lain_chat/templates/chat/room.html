@@ -1,0 +1,609 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    
+    
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
+    
+    <title>LAYER_{{ room_name|upper }} - Present Day, Present Time</title>
+    
+    
+    <link rel="stylesheet" href="{% static 'css/terminal.css' %}">
+    <link rel="stylesheet" href="{% static 'css/lain-effects.css' %}">
+    
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    
+    
+    <script src="{% static 'js/temporal-corruption.js' %}"></script>
+</head>
+<body class="room-{{ room_name }}">
+    
+    <div class="crt-container">
+       
+        <div class="scan-lines"></div>
+        
+       
+        <div class="terminal-screen">
+            
+            <div class="terminal-header">
+                <div class="lain-logo">
+                    <span class="glitch-text" data-text="SERIAL_EXPERIMENTS_LAIN">SERIAL_EXPERIMENTS_LAIN</span>
+                </div>
+                <div class="connection-status">
+                    <span class="status-indicator" id="connection-status">●</span>
+                    <span class="status-text">CONNECTING...</span>
+                </div>
+                <div class="layer-info">
+                    LAYER: <span class="layer-name">{{ room_name|upper }}</span>
+                    | ANON_ID: <span class="anon-id" id="current-anon-id">ANONYMOUS</span>
+                </div>
+            </div>
+            
+            
+            <div class="terminal-output" id="terminal-output">
+                
+                <div class="system-message boot-message">
+                    <span class="timestamp">[BOOT]</span>
+                    <span class="text">PROTOCOL v2.3.7 initializing...</span>
+                </div>
+                <div class="system-message boot-message">
+                    <span class="timestamp">[INIT]</span>
+                    <span class="text">Establishing secure connection to LAYER_{{ room_name|upper }}...</span>
+                </div>
+                
+                
+                <div id="chat-messages">
+                    
+                </div>
+            </div>
+            
+            
+            <div class="terminal-input-container">
+                <div class="terminal-prompt">
+                    <span class="prompt-symbol">></span>
+                    <span class="prompt-path">LAYER_{{ room_name|upper }}</span>
+                    <span class="prompt-cursor">$</span>
+                </div>
+                <input type="text" 
+                       id="message-input" 
+                       class="terminal-input" 
+                       placeholder="Enter message or command..."
+                       autocomplete="off"
+                       spellcheck="false"
+                       maxlength="1000">
+            </div>
+            
+            
+            <div class="status-bar">
+                <div class="status-left">
+                    <span class="users-count">USERS: <span id="user-count">~</span></span>
+                    <span class="ping">PING: <span id="ping-time">--</span>ms</span>
+                </div>
+                <div class="status-right">
+                    <span class="time" id="current-time"></span>
+                    <span class="motto">Let's all love Lain</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    
+    <div class="corruption-status" id="corruption-status">
+        <span id="corruption-level">CORRUPTION: LOADING...</span>
+    </div>
+    
+    
+    {% csrf_token %}
+    
+    
+    <script>
+        
+        const ROOM_CORRUPTION_CONFIG = {
+            'general': { level: 0, delay: 0, name: 'STABLE' },
+            'cyberia': { level: 2, delay: 30, name: 'CLUB MODE' },        // 30 secondes
+            'protocol7': { level: 3, delay: 20, name: 'PROTOCOL' },       // 20 secondes
+            'knights': { level: 3, delay: 15, name: 'MONITORED' },        // 15 secondes
+            'wired': { level: 4, delay: 10, name: 'CONNECTED' },          // 10 secondes
+            'navi': { level: 4, delay: 8, name: 'INTERFACE' },            // 8 secondes
+            'phantom': { level: 5, delay: 6, name: 'SPECTRAL' },          // 6 secondes
+            'masami': { level: 6, delay: 4, name: 'DIVINE' }              // 4 secondes 
+        };
+        
+        
+        window.LAIN_CONFIG = {
+            roomName: "{{ room_name|escapejs }}",
+            wsHost: "{{ request.get_host|escapejs }}",
+            wsScheme: window.location.protocol === 'https:' ? 'wss' : 'ws',
+            csrfToken: document.querySelector('[name=csrfmiddlewaretoken]').value,
+            maxMessageLength: 1000,
+            enableSounds: true,
+            enableGlitchEffects: true
+        };
+        
+        
+        const currentRoom = window.LAIN_CONFIG.roomName;
+        const roomConfig = ROOM_CORRUPTION_CONFIG[currentRoom] || ROOM_CORRUPTION_CONFIG['general'];
+        
+        
+        let chatSocket = null;
+        let isConnected = false;
+        let currentLayerId = 'anonymous';
+        let lastPingTime = 0;
+        
+        
+        const connectionStatus = document.getElementById('connection-status');
+        const statusText = document.querySelector('.status-text');
+        const messageInput = document.getElementById('message-input');
+        const chatMessages = document.getElementById('chat-messages');
+        const terminalOutput = document.getElementById('terminal-output');
+        const userCount = document.getElementById('user-count');
+        const pingTime = document.getElementById('ping-time');
+        const currentTime = document.getElementById('current-time');
+        const currentAnonId = document.getElementById('current-anon-id');
+        
+        
+        function updateCorruptionStatus() {
+            const statusElement = document.getElementById('corruption-status');
+            const levelElement = document.getElementById('corruption-level');
+            
+            if (roomConfig.level === 0) {
+                levelElement.textContent = `CORRUPTION: ${roomConfig.level}/10 - ${roomConfig.name}`;
+                statusElement.classList.remove('active');
+            } else {
+                levelElement.textContent = `CORRUPTION: ${roomConfig.level}/10 - ${roomConfig.name} - ${roomConfig.delay}s`;
+                statusElement.classList.add('active');
+            }
+        }
+        
+        
+        function sanitizeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        
+        function formatTimestamp(timestamp = null) {
+            const date = timestamp ? new Date(timestamp) : new Date();
+            return date.toLocaleTimeString();
+        }
+        
+        
+        function addSystemMessage(message, type = 'info') {
+            const messageElement = document.createElement('div');
+            messageElement.className = 'system-message ' + type;
+            
+            messageElement.innerHTML = 
+                '<span class="timestamp">[' + formatTimestamp() + ']</span>' +
+                '<span class="text">' + sanitizeHtml(message) + '</span>';
+            
+            chatMessages.appendChild(messageElement);
+            scrollToBottom();
+        }
+        
+        
+        function addChatMessageWithCorruption(data) {
+            const messageElement = document.createElement('div');
+            messageElement.className = 'chat-message spawning';
+            
+            
+            const messageId = data.metadata?.message_id || `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+            messageElement.setAttribute('data-message-id', messageId);
+            
+            
+            messageElement.classList.add(`room-${currentRoom}`);
+            
+            if (data.metadata && data.metadata.is_nobody_mode) {
+                messageElement.classList.add('nobody-mode');
+            }
+            if (data.metadata && data.metadata.is_ephemeral) {
+                messageElement.classList.add('ephemeral-mode');
+            }
+            
+            const layerName = sanitizeHtml(data.layer_name || 'anonymous');
+            const message = sanitizeHtml(data.message || '');
+            const timestamp = formatTimestamp(data.timestamp);
+            
+            messageElement.innerHTML = 
+                '<span class="timestamp">[' + timestamp + ']</span>' +
+                '<span class="username">' + layerName + '</span>' +
+                '<span class="separator">:</span>' +
+                '<span class="message-text">' + message + '</span>' +
+                '<span class="corruption-indicator"></span>';
+            
+            chatMessages.appendChild(messageElement);
+            scrollToBottom();
+            
+        
+            if (window.TemporalCorruption && roomConfig.level > 0) {
+                
+                const corruptionMetadata = {
+                    corruption_level: roomConfig.level,
+                    corruption_delay: roomConfig.delay,
+                    message_id: messageId,
+                    room_name: currentRoom,
+                    timestamp_sent: Date.now(),
+                    is_ephemeral: data.metadata?.is_ephemeral || false,
+                    ...(data.metadata || {})
+                };
+                
+                console.log(`[CORRUPTION] Starting corruption for message in room ${currentRoom} - Level: ${roomConfig.level}, Delay: ${roomConfig.delay}s`);
+                window.TemporalCorruption.startMessageCorruption(messageElement, corruptionMetadata);
+            }
+            
+            
+            setTimeout(() => {
+                messageElement.classList.remove('spawning');
+            }, 300);
+            
+            
+            if (window.LAIN_CONFIG.enableGlitchEffects && Math.random() < 0.15) {
+                applyGlitchEffect(messageElement);
+            }
+        }
+        
+        
+        function scrollToBottom() {
+            terminalOutput.scrollTop = terminalOutput.scrollHeight;
+        }
+        
+        
+        function applyGlitchEffect(element) {
+            element.classList.add('glitch-effect');
+            setTimeout(function() {
+                element.classList.remove('glitch-effect');
+            }, 1000);
+        }
+        
+        
+        function handleCorruptionCommand(level) {
+            if (!window.TemporalCorruption) return;
+            
+            const messages = document.querySelectorAll('.chat-message:not(.fully-corrupted)');
+            const messagesToCorrupt = Array.from(messages).slice(-Math.min(5, messages.length));
+            
+            messagesToCorrupt.forEach(messageElement => {
+                window.TemporalCorruption.instantCorruption(messageElement, level);
+            });
+        }
+        
+        
+        function updateConnectionStatus(status, text) {
+            connectionStatus.className = 'status-indicator ' + status;
+            statusText.textContent = text;
+        }
+        
+        
+        function sendMessage(message) {
+            if (!isConnected) {
+                addSystemMessage('ERROR: Not connected to the Wired', 'error');
+                return;
+            }
+            
+            message = message.trim();
+            if (!message) return;
+            
+            if (message.length > window.LAIN_CONFIG.maxMessageLength) {
+                addSystemMessage('ERROR: Message too long (max ' + window.LAIN_CONFIG.maxMessageLength + ' chars)', 'error');
+                return;
+            }
+            
+            
+            if (message.startsWith('/')) {
+                chatSocket.send(JSON.stringify({
+                    'type': 'layer_command',
+                    'command': message
+                }));
+                return;
+            }
+            
+            
+            chatSocket.send(JSON.stringify({
+                'type': 'chat_message',
+                'message': message,
+                'layer_id': currentLayerId,
+                'anonymization_level': 1
+            }));
+        }
+        
+        
+        function initWebSocket() {
+            const wsUrl = window.LAIN_CONFIG.wsScheme + '://' + window.LAIN_CONFIG.wsHost + '/ws/chat/' + window.LAIN_CONFIG.roomName + '/';
+            
+            addSystemMessage('Initializing WebSocket connection...');
+            
+            chatSocket = new WebSocket(wsUrl);
+            
+            chatSocket.onopen = function(e) {
+                isConnected = true;
+                updateConnectionStatus('connected', 'WIRED_CONNECTION_ACTIVE');
+                addSystemMessage('Connection established. You are now in the Wired.', 'success');
+                addSystemMessage('Type /help for available commands.');
+                
+                
+                startPingMonitoring();
+            };
+            
+            chatSocket.onclose = function(e) {
+                isConnected = false;
+                updateConnectionStatus('disconnected', 'CONNECTION_LOST');
+                addSystemMessage('Connection to the Wired has been lost.', 'error');
+                
+               
+                setTimeout(function() {
+                    addSystemMessage('Attempting to reconnect...');
+                    initWebSocket();
+                }, 3000);
+            };
+            
+            chatSocket.onerror = function(e) {
+                updateConnectionStatus('error', 'CONNECTION_ERROR');
+                addSystemMessage('WebSocket error occurred.', 'error');
+            };
+            
+            chatSocket.onmessage = function(e) {
+                try {
+                    const data = JSON.parse(e.data);
+                    handleWebSocketMessage(data);
+                } catch (error) {
+                    addSystemMessage('Error parsing message from Wired.', 'error');
+                    console.error('WebSocket message parse error:', error);
+                }
+            };
+        }
+        
+        
+        function handleWebSocketMessage(data) {
+            switch(data.type) {
+                case 'chat_message':
+                    addChatMessageWithCorruption(data);
+                    break;
+                    
+                case 'system_message':
+                    addSystemMessage(data.message);
+                    break;
+                    
+                case 'error':
+                    addSystemMessage(data.message, 'error');
+                    break;
+                    
+                case 'user_count':
+                    userCount.textContent = data.count;
+                    break;
+                    
+                case 'layer_created':
+                    addSystemMessage('Layer "' + data.layer_name + '" created (ID: ' + data.layer_id + ')', 'success');
+                    currentLayerId = data.layer_id;
+                    currentAnonId.textContent = data.layer_id.substring(0, 8).toUpperCase();
+                    break;
+                    
+                case 'mode_change':
+                    addSystemMessage(data.message, 'info');
+                    break;
+                    
+                case 'pong':
+                    const pingMs = Date.now() - lastPingTime;
+                    pingTime.textContent = pingMs;
+                    break;
+                    
+                case 'effect_command':
+                    handleEffectCommand(data);
+                    break;
+                    
+                default:
+                    console.log('Unhandled message type:', data.type, data);
+            }
+        }
+        
+        
+        function handleEffectCommand(data) {
+            const effect = data.effect;
+            const value = data.value;
+            
+            switch(effect) {
+                case 'glitch':
+                    if (value) {
+                        document.querySelector('.terminal-screen').classList.add('glitch-effect');
+                        setTimeout(function() {
+                            document.querySelector('.terminal-screen').classList.remove('glitch-effect');
+                        }, 1000);
+                    }
+                    break;
+                    
+                case 'corruption_set':
+                    handleCorruptionCommand(value);
+                    document.documentElement.style.setProperty('--corruption-level', value);
+                    break;
+                    
+                case 'ephemeral_toggle':
+                    const chatContainer = document.getElementById('chat-messages');
+                    if (value) {
+                        chatContainer.classList.add('ephemeral-mode');
+                    } else {
+                        chatContainer.classList.remove('ephemeral-mode');
+                    }
+                    break;
+                    
+                case 'cyberia_mode':
+                    if (value) {
+                        document.body.classList.add('cyberia-mode');
+                        setTimeout(function() {
+                            document.body.classList.remove('cyberia-mode');
+                        }, 10000);
+                    }
+                    break;
+                    
+                case 'phantom_toggle':
+                    if (value) {
+                        document.body.classList.add('phantom-mode');
+                    } else {
+                        document.body.classList.remove('phantom-mode');
+                    }
+                    break;
+                    
+                case 'navi_interface':
+                    showNaviInterface();
+                    break;
+                    
+                case 'spectral_presence':
+                    applySpectralEffect();
+                    break;
+            }
+        }
+        
+        
+        function showNaviInterface() {
+            const naviDiv = document.createElement('div');
+            naviDiv.className = 'navi-interface';
+            naviDiv.innerHTML = `
+                <div class="navi-header">NAVI SYSTEM v2.3.7</div>
+                <div class="navi-status">STATUS: ONLINE</div>
+                <div class="navi-temp">CPU TEMP: 42°C</div>
+                <div class="navi-mem">MEMORY: 2048MB AVAILABLE</div>
+                <div class="navi-corruption">CORRUPTION: ${roomConfig.level}/10</div>
+            `;
+            
+            document.body.appendChild(naviDiv);
+            
+            setTimeout(() => {
+                naviDiv.remove();
+            }, 5000);
+        }
+        
+        
+        function applySpectralEffect() {
+            const terminal = document.querySelector('.terminal-screen');
+            if (terminal) {
+                terminal.classList.add('spectral');
+                setTimeout(() => {
+                    terminal.classList.remove('spectral');
+                }, 4000);
+            }
+        }
+        
+        
+        function startPingMonitoring() {
+            setInterval(function() {
+                if (isConnected) {
+                    lastPingTime = Date.now();
+                    chatSocket.send(JSON.stringify({
+                        'type': 'ping',
+                        'timestamp': lastPingTime
+                    }));
+                }
+            }, 10000); 
+        }
+        
+        
+        function updateTime() {
+            currentTime.textContent = formatTimestamp();
+        }
+        
+
+        messageInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                const message = messageInput.value;
+                if (message) {
+                    sendMessage(message);
+                    messageInput.value = '';
+                }
+            }
+        });
+        
+        
+        messageInput.addEventListener('keydown', function(e) {
+            if (window.LainCommands) {
+                if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    const historyCmd = window.LainCommands.getHistoryCommand('up');
+                    if (historyCmd !== null) {
+                        messageInput.value = historyCmd;
+                    }
+                } else if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    const historyCmd = window.LainCommands.getHistoryCommand('down');
+                    if (historyCmd !== null) {
+                        messageInput.value = historyCmd;
+                    }
+                }
+            }
+        });
+        
+        
+        document.addEventListener('click', function() {
+            messageInput.focus();
+        });
+        
+       
+        window.addSystemMessage = addSystemMessage;
+        
+        
+        window.addChatMessage = addChatMessageWithCorruption;
+        
+        
+        window.addEventListener('load', function() {
+            
+            updateTime();
+            setInterval(updateTime, 1000);
+            
+           
+            updateCorruptionStatus();
+            
+            
+            document.body.classList.add(`room-${currentRoom}`);
+            
+            
+            initWebSocket();
+            
+           
+            messageInput.focus();
+            
+            
+            console.log('Present day, present time... Lain Chat system initialized.');
+            console.log('Configuration:', window.LAIN_CONFIG);
+            console.log(`[CORRUPTION] Room ${currentRoom} initialized with level ${roomConfig.level}`);
+            
+            
+            setTimeout(function() {
+                addSystemMessage('Welcome to the Wired. Type /help for commands.', 'lain');
+                
+                
+                if (roomConfig.level > 0) {
+                    addSystemMessage(`Room corruption level: ${roomConfig.level}/10`, 'warning');
+                    addSystemMessage(` Messages will degrade after ${roomConfig.delay} seconds`, 'error');
+                    addSystemMessage('Higher corruption = faster degradation!', 'info');
+                } else {
+                    addSystemMessage('Room corruption level: 0/10 - Messages are permanent', 'success');
+                }
+            }, 2000);
+            
+            
+            setTimeout(function() {
+                if (roomConfig.level > 0) {
+                    addSystemMessage(`[TEST] Corruption will occur every ${roomConfig.delay} seconds in this room`, 'warning');
+                }
+            }, 5000);
+        });
+        
+        
+        window.addEventListener('beforeunload', function() {
+            if (window.TemporalCorruption) {
+                window.TemporalCorruption.cleanup();
+            }
+        });
+    </script>
+    
+    
+    <script src="{% static 'js/lain-commands.js' %}"></script>
+    <script src="{% static 'js/lain-terminal.js' %}"></script>
+</body>
+</html>

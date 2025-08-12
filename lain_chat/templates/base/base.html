@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    
+    
+   
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    
+    <meta name="referrer" content="no-referrer">
+    
+    <title>{% block title %}{% endblock %}</title>
+    
+    
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/terminal.css' %}">
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    
+    <div class="system-header">
+        <div class="system-info">
+            <span> Present Day, Present Time</span>
+            <span id="system-time"></span>
+            <span id="layer-status">Layer: <span id="current-layer">anonymous</span></span>
+        </div>
+    </div>
+    
+    <div class="terminal">
+        
+        <div class="prompt">
+            <span class="prompt-symbol">{% block prompt_symbol %}lain@wired:~${% endblock %}</span>
+            <span>{% block command %}{% endblock %}</span>
+        </div>
+        
+        
+        {% if messages %}
+            {% for message in messages %}
+                <div class="message {{ message.tags }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+        
+       
+        <div class="output" id="main-output">
+            {% block content %}
+            <p class="system-message">System ready. Type /help for commands.</p>
+           
+            {% endblock %}
+        </div>
+        
+        
+        <div class="layer-info" id="layer-info">
+            <div class="layer-status">
+                <span>Current Layer: <span id="layer-display">anonymous</span></span>
+                <span class="layer-indicator" id="layer-indicator"></span>
+            </div>
+            <div id="layer-details">
+                <small>Anonymization: ACTIVE | Encryption: AES-256 </small>
+            </div>
+        </div>
+        
+        
+        {% block input_area %}
+        <div class="prompt">
+            <form id="command-form" method="post">
+                {% csrf_token %}
+                <span class="prompt-symbol">></span>
+                <input type="text" id="command-input" autocomplete="off" placeholder="Enter command or message">
+                <button type="submit">EXECUTE</button>
+            </form>
+        </div>
+        {% endblock %}
+    </div>
+    
+    
+    <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+    
+    
+    {% load static %}
+    <script src="{% static 'js/lain-terminal.js' %}"></script>
+    
+    <script>
+        
+        function updateSystemTime() {
+            const timeElement = document.getElementById('system-time');
+            if (timeElement) {
+                const now = new Date();
+                timeElement.textContent = now.toLocaleTimeString();
+            }
+        }
+        
+        setInterval(updateSystemTime, 1000);
+        updateSystemTime();
+        
+        
+        console.log('%cWelcome to the Wired', 'color: #00ff00; font-size: 16px;');
+        console.log('%cPresent day, present time...', 'color: #00ffff;');
+    </script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

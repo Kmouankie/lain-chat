@@ -1,0 +1,332 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LAIN_CHAT_TEST - System Diagnostics</title>
+    <link rel="stylesheet" href="{% static 'css/terminal.css' %}">
+    <style>
+        .test-container {
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #000;
+            color: #00ff00;
+            font-family: 'JetBrains Mono', monospace;
+            border: 2px solid #00ff00;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #333;
+            background: #111;
+        }
+        .test-result {
+            padding: 5px;
+            margin: 5px 0;
+        }
+        .success { color: #00ff00; }
+        .error { color: #ff0000; }
+        .warning { color: #ffff00; }
+        .info { color: #00ffff; }
+        
+        .mini-terminal {
+            background: #000;
+            border: 1px solid #00ff00;
+            padding: 10px;
+            margin: 10px 0;
+            height: 200px;
+            overflow-y: auto;
+            font-size: 12px;
+        }
+        
+        button {
+            background: #001100;
+            color: #00ff00;
+            border: 1px solid #00ff00;
+            padding: 5px 10px;
+            margin: 5px;
+            cursor: pointer;
+            font-family: inherit;
+        }
+        button:hover {
+            background: #002200;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1> LAIN CHAT SYSTEM - DIAGNOSTICS</h1>
+        <p>Present day, present time... Running system diagnostics.</p>
+        
+        
+        <div class="test-section">
+            <h2> CONFIGURATION</h2>
+            <div class="test-result info">Room Name: <strong>{{ room_name }}</strong></div>
+            <div class="test-result info">Current Time: <strong>{{ current_time }}</strong></div>
+            <div class="test-result info">WebSocket Scheme: <strong>{{ ws_scheme }}</strong></div>
+            <div class="test-result info">Debug Mode: <strong>{{ debug_info.user_authenticated|yesno:"TRUE,FALSE" }}</strong></div>
+            {% if test_layer %}
+            <div class="test-result success">Test Layer: <strong>{{ test_layer.layer_name }}</strong> ({{ test_layer.layer_id }})</div>
+            {% else %}
+            <div class="test-result warning">No test layer found</div>
+            {% endif %}
+        </div>
+        
+        
+        <div class="test-section">
+            <h2>👤 USER INFORMATION</h2>
+            <div class="test-result info">Authenticated: <strong>{{ debug_info.user_authenticated|yesno:"YES,NO" }}</strong></div>
+            {% if debug_info.user_id %}
+            <div class="test-result info">User ID: <strong>{{ debug_info.user_id }}</strong></div>
+            {% endif %}
+            <div class="test-result info">Session: <strong>{{ debug_info.session_key|default:"NO_SESSION" }}</strong></div>
+            <div class="test-result info">Remote Address: <strong>{{ debug_info.remote_addr|default:"UNKNOWN" }}</strong></div>
+        </div>
+        
+        
+        <div class="test-section">
+            <h2> WEBSOCKET CONNECTION TEST</h2>
+            <div id="ws-status" class="test-result warning">Status: TESTING...</div>
+            <div id="ws-url" class="test-result info">URL: <span id="ws-url-display">--</span></div>
+            <div id="ws-messages" class="mini-terminal"></div>
+            <button onclick="testWebSocket()">Test Connection</button>
+            <button onclick="testPing()">Test Ping</button>
+            <button onclick="testEncryption()">Test Encryption</button>
+        </div>
+        
+        
+        <div class="test-section">
+            <h2> LAYER OPERATIONS TEST</h2>
+            <div id="layer-status" class="test-result info">Ready for testing</div>
+            <button onclick="testCreateLayer()">Create Test Layer</button>
+            <button onclick="testLayerCommand()">Test Layer Command</button>
+            <button onclick="testNobodyMode()">Test Nobody Mode</button>
+        </div>
+        
+       
+        <div class="test-section">
+            <h2> MESSAGE TEST</h2>
+            <input type="text" id="test-message" placeholder="Enter test message..." style="width: 60%; background: #111; color: #00ff00; border: 1px solid #333; padding: 5px;">
+            <button onclick="sendTestMessage()">Send Message</button>
+            <div id="message-log" class="mini-terminal"></div>
+        </div>
+        
+       
+        <div class="test-section">
+            <h2> NAVIGATION</h2>
+            <div>
+                <a href="{% url 'chat:index' %}" style="color: #00ffff;">← Back to Chat Index</a> |
+                <a href="{% url 'chat:room_detail' 'test' %}" style="color: #00ffff;">Test Room</a> |
+                <a href="{% url 'chat:room_detail' 'general' %}" style="color: #00ffff;">General Room</a> |
+                <a href="{% url 'chat:status' %}" style="color: #00ffff;">System Status</a>
+            </div>
+        </div>
+    </div>
+    
+    {% csrf_token %}
+    
+    <script>
+        let testSocket = null;
+        let messageCounter = 0;
+        
+        
+        const config = {
+            roomName: "{{ room_name|escapejs }}",
+            wsHost: "{{ request.get_host|escapejs }}",
+            wsScheme: "{{ ws_scheme }}",
+            csrfToken: document.querySelector('[name=csrfmiddlewaretoken]').value
+        };
+        
+        
+        function logMessage(message, type = 'info') {
+            const wsMessages = document.getElementById('ws-messages');
+            const timestamp = new Date().toLocaleTimeString();
+            const div = document.createElement('div');
+            div.className = type;
+            div.innerHTML = `[${timestamp}] ${message}`;
+            wsMessages.appendChild(div);
+            wsMessages.scrollTop = wsMessages.scrollHeight;
+        }
+        
+        function logToMessageLog(message, type = 'info') {
+            const messageLog = document.getElementById('message-log');
+            const timestamp = new Date().toLocaleTimeString();
+            const div = document.createElement('div');
+            div.className = type;
+            div.innerHTML = `[${timestamp}] ${message}`;
+            messageLog.appendChild(div);
+            messageLog.scrollTop = messageLog.scrollHeight;
+        }
+        
+        function updateStatus(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.className = `test-result ${type}`;
+            element.innerHTML = message;
+        }
+        
+        
+        function testWebSocket() {
+            const wsUrl = `${config.wsScheme}://${config.wsHost}/ws/chat/${config.roomName}/`;
+            document.getElementById('ws-url-display').textContent = wsUrl;
+            
+            logMessage('Initializing WebSocket connection...', 'info');
+            updateStatus('ws-status', 'Status: CONNECTING...', 'warning');
+            
+            if (testSocket) {
+                testSocket.close();
+            }
+            
+            testSocket = new WebSocket(wsUrl);
+            
+            testSocket.onopen = function(e) {
+                logMessage(' WebSocket connection opened successfully!', 'success');
+                updateStatus('ws-status', 'Status: CONNECTED', 'success');
+            };
+            
+            testSocket.onclose = function(e) {
+                logMessage(` WebSocket connection closed. Code: ${e.code}`, 'error');
+                updateStatus('ws-status', `Status: DISCONNECTED (${e.code})`, 'error');
+            };
+            
+            testSocket.onerror = function(e) {
+                logMessage(' WebSocket error occurred!', 'error');
+                updateStatus('ws-status', 'Status: ERROR', 'error');
+            };
+            
+            testSocket.onmessage = function(e) {
+                try {
+                    const data = JSON.parse(e.data);
+                    logMessage(` Received: ${data.type} - ${JSON.stringify(data)}`, 'info');
+                } catch (error) {
+                    logMessage(` Raw message: ${e.data}`, 'info');
+                }
+            };
+        }
+        
+        function testPing() {
+            if (!testSocket || testSocket.readyState !== WebSocket.OPEN) {
+                logMessage(' WebSocket not connected. Please test connection first.', 'error');
+                return;
+            }
+            
+            const pingData = {
+                type: 'ping',
+                timestamp: Date.now()
+            };
+            
+            logMessage('📡 Sending ping...', 'info');
+            testSocket.send(JSON.stringify(pingData));
+        }
+        
+        function testEncryption() {
+            if (!testSocket || testSocket.readyState !== WebSocket.OPEN) {
+                logMessage(' WebSocket not connected. Please test connection first.', 'error');
+                return;
+            }
+            
+            const testData = {
+                type: 'encryption_test',
+                test_message: 'Hello Lain! This is an encryption test.'
+            };
+            
+            logMessage('🔐 Testing encryption...', 'info');
+            testSocket.send(JSON.stringify(testData));
+        }
+        
+        function testCreateLayer() {
+            if (!testSocket || testSocket.readyState !== WebSocket.OPEN) {
+                logMessage(' WebSocket not connected. Please test connection first.', 'error');
+                return;
+            }
+            
+            const layerName = `test_layer_${Date.now()}`;
+            const commandData = {
+                type: 'layer_command',
+                command: `/layer create ${layerName}`
+            };
+            
+            logMessage(`🎭 Creating layer: ${layerName}`, 'info');
+            updateStatus('layer-status', `Creating layer: ${layerName}`, 'warning');
+            testSocket.send(JSON.stringify(commandData));
+        }
+        
+        function testLayerCommand() {
+            if (!testSocket || testSocket.readyState !== WebSocket.OPEN) {
+                logMessage(' WebSocket not connected. Please test connection first.', 'error');
+                return;
+            }
+            
+            const commandData = {
+                type: 'layer_command',
+                command: '/present_day'
+            };
+            
+            logMessage('📡 Sending present_day command...', 'info');
+            testSocket.send(JSON.stringify(commandData));
+        }
+        
+        function testNobodyMode() {
+            if (!testSocket || testSocket.readyState !== WebSocket.OPEN) {
+                logMessage(' WebSocket not connected. Please test connection first.', 'error');
+                return;
+            }
+            
+            const commandData = {
+                type: 'layer_command',
+                command: '/nobody'
+            };
+            
+            logMessage(' Toggling nobody mode...', 'info');
+            testSocket.send(JSON.stringify(commandData));
+        }
+        
+        function sendTestMessage() {
+            const messageInput = document.getElementById('test-message');
+            const message = messageInput.value.trim();
+            
+            if (!message) {
+                logToMessageLog(' Message cannot be empty', 'error');
+                return;
+            }
+            
+            if (!testSocket || testSocket.readyState !== WebSocket.OPEN) {
+                logToMessageLog(' WebSocket not connected. Please test connection first.', 'error');
+                return;
+            }
+            
+            const messageData = {
+                type: 'chat_message',
+                message: message,
+                layer_id: 'test_layer',
+                anonymization_level: 1
+            };
+            
+            logToMessageLog(` Sending: "${message}"`, 'info');
+            testSocket.send(JSON.stringify(messageData));
+            messageInput.value = '';
+            messageCounter++;
+        }
+        
+        
+        window.addEventListener('load', function() {
+            logMessage(' Test page loaded. Ready for diagnostics.', 'success');
+            logMessage(' Click "Test Connection" to start WebSocket tests.', 'info');
+            
+            
+            console.log('Lain Chat Test Configuration:', config);
+        });
+        
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            const messageInput = document.getElementById('test-message');
+            messageInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    sendTestMessage();
+                }
+            });
+        });
+    </script>
+</body>
+</html>

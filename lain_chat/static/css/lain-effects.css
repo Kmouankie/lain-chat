@@ -1,0 +1,664 @@
+@keyframes temporal_corruption {
+    0% { 
+        filter: none;
+        text-shadow: none;
+    }
+    25% { 
+        filter: brightness(1.2) contrast(1.1);
+        text-shadow: 1px 1px #ff0000, -1px -1px #00ffff;
+    }
+    50% { 
+        filter: brightness(0.8) contrast(1.5) hue-rotate(90deg);
+        text-shadow: 2px 0 #ff00ff, -2px 0 #ffff00;
+    }
+    75% { 
+        filter: brightness(1.5) contrast(0.8) hue-rotate(180deg);
+        text-shadow: 3px 1px #00ff00, -3px -1px #ff0000;
+    }
+    100% { 
+        filter: brightness(0.6) contrast(2) hue-rotate(270deg);
+        text-shadow: 0 0 5px #ff0000, 0 0 10px #ff0000;
+    }
+}
+
+
+@keyframes instant_corruption {
+    0%, 100% { 
+        transform: translate(0);
+        filter: none;
+    }
+    10% { 
+        transform: translate(-1px, 1px);
+        filter: hue-rotate(90deg);
+    }
+    20% { 
+        transform: translate(1px, -1px);
+        filter: hue-rotate(180deg);
+    }
+    30% { 
+        transform: translate(-1px, -1px);
+        filter: hue-rotate(270deg);
+    }
+    40% { 
+        transform: translate(1px, 1px);
+        filter: invert(1);
+    }
+    50% { 
+        transform: translate(-2px, 0);
+        filter: brightness(2) contrast(3);
+    }
+    60% { 
+        transform: translate(2px, 0);
+        filter: sepia(1) hue-rotate(45deg);
+    }
+    70% { 
+        transform: translate(0, -2px);
+        filter: saturate(3) brightness(0.5);
+    }
+    80% { 
+        transform: translate(0, 2px);
+        filter: blur(1px) brightness(1.5);
+    }
+    90% { 
+        transform: translate(-1px, 0);
+        filter: contrast(5) brightness(0.3);
+    }
+}
+
+
+.chat-message.corrupting {
+    animation: temporal_corruption 1s ease-in-out infinite alternate;
+}
+
+.chat-message.instant-corruption {
+    animation: instant_corruption 0.1s infinite;
+}
+
+.chat-message.fully-corrupted {
+    opacity: 0.3;
+    filter: brightness(0.4) contrast(3);
+    text-shadow: 0 0 3px #ff0000;
+    font-family: monospace;
+    letter-spacing: 1px;
+}
+
+.chat-message.fully-corrupted .message-text {
+    color: #ff4444;
+    text-shadow: 0 0 5px #ff0000, 0 0 10px #ff0000;
+}
+
+
+.corruption-indicator {
+    margin-left: 10px;
+    font-size: 11px;
+    font-weight: bold;
+    font-family: 'JetBrains Mono', monospace;
+    opacity: 0.8;
+    transition: all 0.3s ease;
+    min-width: 25px;
+    text-align: center;
+}
+
+
+.room-general .corruption-indicator {
+    color: #00ff00;
+}
+
+.room-general .corruption-indicator::before { 
+    content: "∞"; 
+    color: #00ff00; 
+}
+
+
+.room-cyberia .corruption-indicator,
+.room-protocol7 .corruption-indicator,
+.room-knights .corruption-indicator,
+.room-wired .corruption-indicator,
+.room-navi .corruption-indicator,
+.room-phantom .corruption-indicator,
+.room-masami .corruption-indicator {
+    color: #ff8800;
+    font-size: 10px;
+   
+}
+
+/* Animation pour le compte à rebours */
+.corruption-indicator.countdown {
+    color: #ff0000;
+    animation: countdown-pulse 1s infinite;
+}
+
+@keyframes countdown-pulse {
+    0%, 100% { 
+        opacity: 1; 
+        transform: scale(1);
+    }
+    50% { 
+        opacity: 0.6; 
+        transform: scale(1.1);
+        color: #ffff00;
+    }
+}
+
+/*  compte à rebours a 0 */
+.corruption-indicator.corrupting {
+    color: #ff0000;
+    animation: countdown-final 0.5s infinite;
+}
+
+@keyframes countdown-final {
+    0%, 100% { color: #ff0000; }
+    50% { color: #ffff00; }
+}
+
+/* Styles pour différents états du countdown */
+.corruption-indicator.high-time {
+    color: #00ff00; 
+}
+
+.corruption-indicator.medium-time {
+    color: #ffff00; 
+}
+
+.corruption-indicator.low-time {
+    color: #ff8800; 
+}
+
+.corruption-indicator.critical-time {
+    color: #ff0000; 
+    animation: countdown-pulse 0.5s infinite;
+}
+
+/* Avertissement de corruption */
+.corruption-warning {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    background: rgba(255, 0, 0, 0.9);
+    color: white;
+    padding: 10px;
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    z-index: 9999;
+    animation: pulse 1s infinite;
+}
+
+/* Effet de dégradation progressive */
+@keyframes message_degradation {
+    0% { opacity: 1; filter: none; }
+    20% { opacity: 0.9; filter: brightness(1.1); }
+    40% { opacity: 0.8; filter: brightness(1.2) contrast(1.1); }
+    60% { opacity: 0.6; filter: brightness(0.9) contrast(1.3); }
+    80% { opacity: 0.4; filter: brightness(0.7) contrast(1.5); }
+    100% { opacity: 0.3; filter: brightness(0.5) contrast(2); }
+}
+
+.chat-message.degrading {
+    animation: message_degradation 1s ease-in-out forwards;
+}
+
+/* Corruption par caractère */
+.corrupted-char {
+    display: inline-block;
+    animation: char_corruption 0.1s infinite;
+}
+
+@keyframes char_corruption {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1) rotate(1deg); }
+}
+
+/* Interface  statut  corruption */
+.corruption-status {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    background: rgba(0, 0, 0, 0.8);
+    color: #00ff00;
+    padding: 8px 12px;
+    border: 1px solid #00ff00;
+    border-radius: 3px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    z-index: 1000;
+}
+
+.corruption-status.active {
+    border-color: #ff0000;
+    color: #ff0000;
+    box-shadow: 0 0 10px rgba(255, 0, 0, 0.3);
+}
+
+/* Effet de room spécifique */
+.room-masami .chat-message {
+    border-left: 2px solid #ff0000;
+}
+
+.room-phantom .chat-message {
+    border-left: 2px solid #ff0088;
+}
+
+.room-cyberia .chat-message {
+    border-left: 2px solid #ff00ff;
+}
+
+.room-general .chat-message {
+    border-left: 2px solid #00ff00;
+}
+
+.room-protocol7 .chat-message {
+    border-left: 2px solid #00ffff;
+}
+
+.room-knights .chat-message {
+    border-left: 2px solid #ffff00;
+}
+
+.room-wired .chat-message {
+    border-left: 2px solid #ff8800;
+}
+
+.room-navi .chat-message {
+    border-left: 2px solid #8800ff;
+}
+
+/* Animation  pour nouveaux messages */
+@keyframes message_spawn {
+    0% { 
+        opacity: 0; 
+        transform: translateY(10px); 
+        filter: blur(2px);
+    }
+    100% { 
+        opacity: 1; 
+        transform: translateY(0); 
+        filter: none;
+    }
+}
+
+.chat-message.spawning {
+    animation: message_spawn 0.3s ease-out;
+}
+
+/* ANIMATIONS DE BASE*/
+
+@keyframes glitch {
+    0%, 100% { transform: translate(0); filter: hue-rotate(0deg); }
+    20% { transform: translate(-2px, 2px); filter: hue-rotate(90deg); }
+    40% { transform: translate(-2px, -2px); filter: hue-rotate(180deg); }
+    60% { transform: translate(2px, 2px); filter: hue-rotate(270deg); }
+    80% { transform: translate(2px, -2px); filter: hue-rotate(360deg); }
+}
+
+@keyframes corruption {
+    0%, 100% { 
+        filter: none;
+        text-shadow: none;
+    }
+    25% { 
+        filter: brightness(1.5) contrast(1.2);
+        text-shadow: 2px 0 #ff0000, -2px 0 #00ffff;
+    }
+    50% { 
+        filter: invert(1) hue-rotate(180deg);
+        text-shadow: 1px 1px #ff00ff, -1px -1px #ffff00;
+    }
+    75% { 
+        filter: saturate(3) brightness(0.8);
+        text-shadow: 3px 0 #00ff00, -3px 0 #ff0000;
+    }
+}
+
+@keyframes phantom {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+}
+
+@keyframes dissolution {
+    0% { opacity: 1; letter-spacing: normal; }
+    50% { opacity: 0.5; letter-spacing: 0.2em; }
+    100% { opacity: 0.2; letter-spacing: 0.5em; }
+}
+
+@keyframes dimensional_shift {
+    0%, 100% { 
+        transform: perspective(1000px) rotateY(0deg) rotateX(0deg);
+        filter: none;
+    }
+    25% { 
+        transform: perspective(1000px) rotateY(5deg) rotateX(2deg);
+        filter: blur(1px);
+    }
+    50% { 
+        transform: perspective(1000px) rotateY(-3deg) rotateX(-1deg);
+        filter: blur(2px) brightness(1.2);
+    }
+    75% { 
+        transform: perspective(1000px) rotateY(2deg) rotateX(1deg);
+        filter: blur(1px) hue-rotate(90deg);
+    }
+}
+
+@keyframes cyberia_pulse {
+    0%, 100% { 
+        background-color: #000011;
+        box-shadow: 0 0 20px #ff00ff;
+    }
+    50% { 
+        background-color: #110022;
+        box-shadow: 0 0 40px #ff00ff, inset 0 0 20px #00ffff;
+    }
+}
+
+@keyframes spectral_flicker {
+    0%, 100% { 
+        opacity: 0.8;
+        filter: none;
+    }
+    20% { 
+        opacity: 0.9;
+        filter: brightness(1.3) blur(0.5px);
+    }
+    40% { 
+        opacity: 0.6;
+        filter: brightness(0.8) blur(1px);
+    }
+    60% { 
+        opacity: 1;
+        filter: brightness(1.5) blur(0.2px);
+    }
+    80% { 
+        opacity: 0.7;
+        filter: brightness(0.9) blur(0.8px);
+    }
+}
+
+@keyframes closing_world {
+    0% { 
+        filter: none;
+        transform: scale(1);
+    }
+    25% { 
+        filter: brightness(0.8) contrast(1.2);
+        transform: scale(0.98);
+    }
+    50% { 
+        filter: brightness(0.6) contrast(1.5) sepia(0.3);
+        transform: scale(0.95);
+    }
+    75% { 
+        filter: brightness(0.4) contrast(2) sepia(0.6);
+        transform: scale(0.92);
+    }
+    100% { 
+        filter: brightness(0.2) contrast(3) sepia(1);
+        transform: scale(0.9);
+    }
+}
+
+/* CLASSES D'EFTS */
+
+.glitch-effect {
+    animation: glitch 0.5s infinite;
+}
+
+.corruption-effect {
+    animation: corruption 2s infinite;
+}
+
+.corrupted {
+    animation: corruption 3s ease-in-out;
+}
+
+.phantom-mode {
+    animation: phantom 2s infinite;
+}
+
+.dissolving {
+    animation: dissolution 3s ease-out forwards;
+}
+
+.dimension-shift {
+    animation: dimensional_shift 3s ease-in-out;
+}
+
+.spectral {
+    animation: spectral_flicker 1s infinite;
+}
+
+.closing-world {
+    animation: closing_world 5s ease-in-out forwards;
+}
+
+/* MODES SPÉCIAUX */
+
+.cyberia-mode {
+    animation: cyberia_pulse 2s infinite;
+}
+
+.cyberia-mode .terminal-screen {
+    border-color: #ff00ff;
+    box-shadow: 
+        0 0 20px #ff00ff,
+        inset 0 0 20px rgba(255, 0, 255, 0.1);
+}
+
+.cyberia-mode .chat-message {
+    color: #ff88ff;
+    text-shadow: 0 0 5px #ff00ff;
+}
+
+.ephemeral-mode .chat-message {
+    opacity: 0.7;
+    font-style: italic;
+}
+
+.ephemeral-mode .chat-message:before {
+    content: "⧗ ";
+    color: #ffff00;
+}
+
+.nobody-mode .username {
+    color: #666;
+    font-style: italic;
+}
+
+.nobody-mode .username:before {
+    content: "◯ ";
+}
+
+/* INTERFACE NAVI */
+
+.navi-interface {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: rgba(0, 0, 0, 0.9);
+    border: 1px solid #00ff00;
+    padding: 15px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: #00ff00;
+    z-index: 1000;
+    min-width: 200px;
+    box-shadow: 0 0 20px rgba(0, 255, 0, 0.3);
+}
+
+.navi-header {
+    font-weight: bold;
+    margin-bottom: 10px;
+    color: #ffff00;
+    text-align: center;
+}
+
+.navi-status, .navi-temp, .navi-mem {
+    margin: 5px 0;
+    padding: 2px 0;
+    border-bottom: 1px dotted #333;
+}
+
+/* SYMBOLES  bzr*/
+
+.mystic-symbol {
+    position: fixed;
+    font-size: 24px;
+    color: #ff00ff;
+    text-shadow: 0 0 10px #ff00ff;
+    pointer-events: none;
+    z-index: 999;
+    animation: mystic-fade 3s ease-out forwards;
+}
+
+@keyframes mystic-fade {
+    0% {
+        opacity: 0;
+        transform: scale(0.5) rotate(0deg);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1.2) rotate(180deg);
+    }
+    100% {
+        opacity: 0;
+        transform: scale(0.8) rotate(360deg);
+    }
+}
+
+/*  EFFETS MESSAGES */
+
+.system-message.lain {
+    color: #ffff00;
+    font-weight: bold;
+    text-shadow: 0 0 5px #ffff00;
+}
+
+.system-message.lain:before {
+    content: "◉ ";
+    color: #ff0000;
+}
+
+.chat-message.phantom {
+    animation: phantom 1s ease-in-out;
+}
+
+.chat-message.corrupted {
+    animation: corruption 0.8s ease-in-out;
+}
+
+/* EFFETS GLOBAUX */
+
+.global-glitch {
+    animation: glitch 0.3s infinite;
+}
+
+.global-glitch .chat-message:nth-child(odd) {
+    animation: corruption 0.5s ease-in-out;
+}
+
+.global-glitch .chat-message:nth-child(even) {
+    animation: glitch 0.4s ease-in-out;
+}
+
+/*  EASTER EGGS   */
+
+.lain-sequence-active {
+    background: radial-gradient(circle, rgba(255,255,0,0.1) 0%, rgba(0,0,0,1) 100%);
+}
+
+.lain-sequence-active .terminal-screen {
+    animation: 
+        glitch 0.1s infinite,
+        dimensional_shift 2s ease-in-out infinite;
+}
+
+.god-is-here {
+    filter: invert(1) hue-rotate(180deg);
+    animation: corruption 0.2s infinite;
+}
+
+.god-is-here:before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: 
+        repeating-linear-gradient(
+            0deg,
+            transparent,
+            transparent 2px,
+            rgba(255,255,255,0.1) 2px,
+            rgba(255,255,255,0.1) 4px
+        );
+    pointer-events: none;
+    z-index: 999;
+}
+
+/*  EFFETS TRANSI  */
+
+.phase-transition {
+    transition: all 0.5s ease-in-out;
+}
+
+.reality-shift {
+    transform: perspective(1000px) rotateX(5deg);
+    filter: blur(1px) brightness(1.2);
+}
+
+.wired-connection {
+    box-shadow: 
+        0 0 10px #00ff00,
+        inset 0 0 10px rgba(0, 255, 0, 0.1);
+    border-color: #00ff00;
+}
+
+/* RESPONSIVE MOBILE  */
+
+@media (max-width: 768px) {
+    .navi-interface {
+        top: 10px;
+        right: 10px;
+        font-size: 10px;
+        min-width: 150px;
+        padding: 10px;
+    }
+    
+    .mystic-symbol {
+        font-size: 18px;
+    }
+    
+    .corruption-status {
+        bottom: 10px;
+        left: 10px;
+        font-size: 10px;
+        padding: 6px 8px;
+    }
+}
+
+/* ACCESSIBILITÉ  */
+
+@media (prefers-reduced-motion: reduce) {
+    .glitch-effect,
+    .corruption-effect,
+    .corrupted,
+    .phantom-mode,
+    .spectral,
+    .dimension-shift,
+    .cyberia-mode,
+    .global-glitch,
+    .corrupting,
+    .instant-corruption {
+        animation: none;
+    }
+    
+    .mystic-symbol {
+        animation: none;
+        opacity: 0.8;
+    }
+    
+    .chat-message.spawning {
+        animation: none;
+    }
+}
